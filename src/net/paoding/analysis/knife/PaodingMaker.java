@@ -22,9 +22,10 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Method;
-import java.net.URISyntaxException;
 import java.net.URL;
+import java.net.URLDecoder;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -183,11 +184,7 @@ public class PaodingMaker {
 				throw new FileNotFoundException("Not found " + path
 						+ " in classpath.");
 			}
-			
-			/*
-			 * Fix issue 42 : 读取配置文件的一个Bug
-			 */
-			file = new File(getUrlPath(url));
+			file = new File(url.getFile());
 			in = url.openStream();
 		} else {
 			if (path.startsWith("dic-home:")) {
@@ -333,7 +330,14 @@ public class PaodingMaker {
 		p.setProperty(Constants.DIC_HOME, dicHome);// writer to the properites
 		// object
 		// 将dicHome转化为一个系统唯一的绝对路径，记录在属性对象中
-		File dicHomeFile = getFile(dicHome);
+		File dicHomeFile2 = getFile(dicHome);   
+        String path="";   
+        try {   
+            path = URLDecoder.decode(dicHomeFile2.getPath(),"UTF-8");   
+        } catch (UnsupportedEncodingException e) {   
+            e.printStackTrace();   
+        }   
+        File dicHomeFile = new File(path); 
 		if (!dicHomeFile.exists()) {
 			throw new PaodingAnalysisException(
 					"not found the dic home dirctory! "
@@ -527,19 +531,6 @@ public class PaodingMaker {
 			}
 		}
 	}
-	
-	private static String getUrlPath(URL url){
-		if (url == null) return null;
-		String urlPath = null;
-		try {
-			urlPath = url.toURI().getPath();
-		} catch (URISyntaxException e) {			
-		}			
-		if (urlPath == null){
-			urlPath = url.getFile();
-		}
-		return urlPath;
-	}
 
 	private static File getFile(String path) {
 		File file;
@@ -547,15 +538,8 @@ public class PaodingMaker {
 		if (path.startsWith("classpath:")) {
 			path = path.substring("classpath:".length());
 			url = getClassLoader().getResource(path);
-			
-			/*
-			 * Fix issue 42 : 读取配置文件的一个Bug
-			 */
-			if (url != null){
-				path = getUrlPath(url);
-			}
 			final boolean fileExist = url != null;
-			file = new File(path) {
+			file = new File(fileExist ? url.getFile() : path) {
 				private static final long serialVersionUID = 4009013298629147887L;
 
 				public boolean exists() {
