@@ -1,0 +1,1 @@
+﻿对paoding-for-lucene-2.4的定制
